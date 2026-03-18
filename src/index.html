@@ -1,11 +1,55 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="utf-8">
-  <title>StudyPlannerFrontend</title>
+  <title>Study Planner</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
+
+  <!-- Tipografía: IBM Plex Sans (body) + IBM Plex Mono (tiempos) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* ── CSS Variables (tema claro) ── */
+    :root {
+      --bg:           #f7f8fa;
+      --surface:      #ffffff;
+      --border:       #e2e6ea;
+      --hover:        #f1f3f5;
+      --accent:       #2563eb;          /* Azul estudio */
+      --accent-soft:  #eff6ff;
+      --text-primary: #0f172a;
+      --text-secondary: #64748b;
+      --danger:       #ef4444;
+      --success:      #22c55e;
+      --font-body:    'IBM Plex Sans', sans-serif;
+      --font-mono:    'IBM Plex Mono', monospace;
+    }
+
+    /* ── Reset básico ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text-primary);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Las horas/tiempos usan fuente monoespaciada */
+    .time-chip, .td-time, .td-date {
+      font-family: var(--font-mono);
+    }
+
+    /* Scrollbar sutil */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
 </head>
 <body>
   <app-root></app-root>

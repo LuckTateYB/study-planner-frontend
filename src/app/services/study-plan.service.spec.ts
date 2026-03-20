@@ -26,6 +26,7 @@ describe('StudyPlanService', () => {
 
   it('debería llamar a POST /plan/generate y retornar el plan', () => {
     const mockRequest: PlanRequest = {
+      userId: 1,
       courses: [{ name: 'Mathematics' }],
       exams: [{ course: 'Mathematics', date: '2026-06-10' }],
       hoursPerDay: 3,
@@ -54,8 +55,7 @@ describe('StudyPlanService', () => {
   });
 
   it('debería emitir un error legible si el backend falla', () => {
-    const mockRequest: PlanRequest = {
-      courses: [{ name: 'Test' }],
+    const mockRequest: PlanRequest = {      userId: 1,      courses: [{ name: 'Test' }],
       exams: [{ course: 'Test', date: '2026-06-10' }],
       hoursPerDay: 2,
       preferredStudyTime: 'MORNING'

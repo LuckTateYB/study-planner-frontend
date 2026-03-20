@@ -196,6 +196,9 @@ export class DashboardComponent {
   exams: Exam[]        = [];
   preferences: Preferences = { hoursPerDay: 3, preferredStudyTime: 'EVENING' };
 
+  /** Hardcodeado temporalmente hasta RF-10 */
+  private readonly TEMP_USER_ID = 1;
+
   studyPlan: DayPlan[] = [];
 
   /** Mapa de dificultad por curso para colorear la tabla */
@@ -239,9 +242,14 @@ export class DashboardComponent {
     this.errorMessage = '';
     this.successMessage = '';
 
+    
     const request: PlanRequest = {
+      userId: this.TEMP_USER_ID, // hardcodeado temporal
       courses: this.courses.map(c => ({ name: c.name })),
-      exams:   this.exams,
+      exams: this.exams.map(e => ({
+        course: e.course,
+        date: e.date
+      })),
       hoursPerDay: this.preferences.hoursPerDay,
       preferredStudyTime: this.preferences.preferredStudyTime
     };

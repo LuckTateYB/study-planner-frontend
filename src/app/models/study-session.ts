@@ -26,6 +26,7 @@ export interface PlanResponse {
  * Payload que se envía al backend para generar el plan
  */
 export interface PlanRequest {
+  userId: number;
   courses: { name: string }[];
   exams: { course: string; date: string }[];
   hoursPerDay: number;

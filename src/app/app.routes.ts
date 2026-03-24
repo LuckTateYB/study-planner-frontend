@@ -1,11 +1,32 @@
-import { Routes } from '@angular/router';
-import { DashboardComponent } from './pages/dashboard/dashboard.component';
+// src/app/app.routes.ts
 
-/**
- * Rutas de la aplicación Study Planner.
- * La ruta raíz carga el dashboard principal.
- */
+import { Routes } from '@angular/router';
+import { authGuard } from './guard/auth.guard';
+
 export const routes: Routes = [
-  { path: '', component: DashboardComponent },
-  { path: '**', redirectTo: '' }
+  // Ruta raíz redirige según autenticación
+  { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+
+  // Rutas públicas — no requieren token
+  {
+    path: 'login',
+    loadComponent: () =>
+      import('./pages/login/login.component').then(m => m.LoginComponent)
+  },
+  {
+    path: 'register',
+    loadComponent: () =>
+      import('./pages/register/register.component').then(m => m.RegisterComponent)
+  },
+
+  // Rutas protegidas — authGuard redirige a /login si no hay token
+  {
+    path: 'dashboard',
+    loadComponent: () =>
+      import('./pages/dashboard/dashboard.component').then(m => m.DashboardComponent),
+    canActivate: [authGuard]
+  },
+
+  // Fallback
+  { path: '**', redirectTo: 'dashboard' }
 ];

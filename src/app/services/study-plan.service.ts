@@ -4,17 +4,13 @@ import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { PlanRequest, PlanResponse } from '../models/study-session';
 
-/**
- * Servicio principal para comunicarse con el backend Spring Boot.
- * Consume el endpoint POST http://localhost:8080/plan/generate
- */
 @Injectable({
   providedIn: 'root'
 })
 export class StudyPlanService {
 
   /** URL base del backend */
-  private readonly apiUrl = 'http://localhost:8080/plan/generate';
+  private readonly baseUrl = 'http://localhost:8080/plan/generate';
 
   constructor(private http: HttpClient) {}
 
@@ -23,26 +19,30 @@ export class StudyPlanService {
    * @param request - Payload con cursos, exámenes, horas/día y franja horaria
    */
   generatePlan(request: PlanRequest): Observable<PlanResponse> {
-    return this.http.post<PlanResponse>(this.apiUrl, request).pipe(
+    // userId eliminado del payload — viene del token en el header Authorization
+    return this.http.post<PlanResponse>(`${this.baseUrl}/plan/generate`, request).pipe(
       catchError(this.handleError)
     );
   }
 
-  /**
-   * Maneja errores HTTP de forma centralizada.
-   * Distingue entre errores de red y errores del servidor.
-   */
+  updateSession(id: number, data: Partial<{ date: string; startTime: string; duration: number; courseId: number }>): Observable<unknown> {
+    return this.http.put(`${this.baseUrl}/plan/sessions/${id}`, data).pipe(
+      catchError(this.handleError)
+    );
+  }
+ 
   private handleError(error: HttpErrorResponse): Observable<never> {
     let message: string;
-
+ 
     if (error.status === 0) {
-      // Error de red o el backend no está disponible
       message = 'No se pudo conectar al servidor. Verifica que el backend esté activo en http://localhost:8080';
+    } else if (error.status === 401) {
+      // 401 significa token inválido o expirado — AuthService maneja el logout
+      message = 'Sesión expirada. Por favor inicia sesión nuevamente.';
     } else {
-      // Error devuelto por el backend (4xx / 5xx)
       message = `Error del servidor (${error.status}): ${error.error?.message || error.message}`;
     }
-
+ 
     return throwError(() => new Error(message));
   }
 }

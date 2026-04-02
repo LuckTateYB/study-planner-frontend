@@ -2,6 +2,7 @@
  * Sesión individual de estudio retornada por el backend
  */
 export interface SessionInfo {
+  id?: number;
   course: string;
   startTime: string;  // "HH:mm"
   duration: number;   // horas
@@ -37,6 +38,7 @@ export interface PlanRequest {
  * Fila aplanada para mostrar en la tabla del cronograma
  */
 export interface StudyTableRow {
+  id?: number;
   date: string;
   startTime: string;
   course: string;

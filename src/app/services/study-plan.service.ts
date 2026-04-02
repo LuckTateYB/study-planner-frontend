@@ -10,7 +10,7 @@ import { PlanRequest, PlanResponse } from '../models/study-session';
 export class StudyPlanService {
 
   /** URL base del backend */
-  private readonly baseUrl = 'http://localhost:8080/plan/generate';
+  private readonly baseUrl = 'http://localhost:8080/plan';
 
   constructor(private http: HttpClient) {}
 
@@ -20,13 +20,13 @@ export class StudyPlanService {
    */
   generatePlan(request: PlanRequest): Observable<PlanResponse> {
     // userId eliminado del payload — viene del token en el header Authorization
-    return this.http.post<PlanResponse>(`${this.baseUrl}/plan/generate`, request).pipe(
+    return this.http.post<PlanResponse>(`${this.baseUrl}/generate`, request).pipe(
       catchError(this.handleError)
     );
   }
 
   updateSession(id: number, data: Partial<{ date: string; startTime: string; duration: number; courseId: number }>): Observable<unknown> {
-    return this.http.put(`${this.baseUrl}/plan/sessions/${id}`, data).pipe(
+    return this.http.put(`${this.baseUrl}/sessions/${id}`, data).pipe(
       catchError(this.handleError)
     );
   }

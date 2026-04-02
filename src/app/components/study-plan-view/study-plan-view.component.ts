@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DayPlan, StudyTableRow } from '../../models/study-session';
 import { Course } from '../../models/course';
+import { StudyPlanService } from '../../services/study-plan.service';
 
 interface CalendarCell {
   date?: string;
@@ -143,6 +144,7 @@ interface CalendarCell {
                       <div *ngIf="cell.sessions.length === 0" class="no-sessions">sin sesiones</div>
                       <div *ngFor="let s of cell.sessions" class="cell-session" [class]="getDiffClass(s.difficulty)">
                         <strong>{{ s.startTime }}</strong> {{ s.course }} ({{ s.duration }}h)
+                        <button *ngIf="s.id" type="button" class="session-edit-btn" (click)="startEditing(s)" title="Editar sesión">✏️</button>
                       </div>
                     </div>
                   </div>
@@ -150,6 +152,38 @@ interface CalendarCell {
               </div>
             </div>
           </ng-container>
+
+          <div *ngIf="editingRow" class="edit-panel">
+            <div class="edit-panel-header">
+              <div>
+                <strong>Editar sesión</strong>
+                <div class="edit-panel-meta">{{ editingRow.course }} · {{ formatDate(editingRow.date) }} · {{ editingRow.startTime }}</div>
+              </div>
+              <button type="button" class="btn-clear" (click)="cancelEditing()">✕ Cerrar</button>
+            </div>
+            <div class="edit-panel-body">
+              <div class="edit-field">
+                <label>Fecha</label>
+                <input type="date" [(ngModel)]="editDate" />
+              </div>
+              <div class="edit-field">
+                <label>Hora inicio</label>
+                <input type="time" [(ngModel)]="editTime" />
+              </div>
+              <div class="edit-field">
+                <label>Duración (h)</label>
+                <input type="number" min="1" [(ngModel)]="editDuration" />
+              </div>
+            </div>
+            <div class="edit-panel-actions">
+              <button type="button" class="btn-clear" (click)="cancelEditing()">Cancelar</button>
+              <button type="button" class="btn-save" (click)="saveEditing()" [disabled]="isSaving">
+                {{ isSaving ? 'Guardando...' : 'Guardar cambios' }}
+              </button>
+            </div>
+            <p *ngIf="editError" class="edit-error">{{ editError }}</p>
+            <p *ngIf="editSuccess" class="edit-success">{{ editSuccess }}</p>
+          </div>
         </div>
 
         <!-- Sin resultados tras filtro -->
@@ -227,6 +261,39 @@ interface CalendarCell {
     .cell-session.diff-4 { background: rgba(239,68,68,0.2); }
     .cell-session.diff-5 { background: rgba(168,85,247,0.2); }
     .no-sessions { color: var(--text-secondary); font-size: 0.72rem; }
+    .session-edit-btn {
+      margin-left: 0.25rem;
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      cursor: pointer;
+      font-size: 0.82rem;
+      padding: 0 2px;
+    }
+    .session-edit-btn:hover { text-decoration: underline; }
+    .edit-panel {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 1rem;
+      display: grid;
+      gap: 1rem;
+    }
+    .edit-panel-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+    .edit-panel-meta { font-size: 0.82rem; color: var(--text-secondary); margin-top: 0.15rem; }
+    .edit-panel-body { display: grid; gap: 0.9rem; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+    .edit-field { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.82rem; }
+    .edit-field input {
+      padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text-primary);
+    }
+    .edit-panel-actions { display: flex; justify-content: flex-end; gap: 0.75rem; flex-wrap: wrap; }
+    .btn-save {
+      padding: 0.55rem 1rem; border: none; border-radius: 10px;
+      background: var(--accent); color: white; cursor: pointer;
+    }
+    .btn-save:disabled { opacity: 0.55; cursor: not-allowed; }
+    .edit-error { color: var(--danger); margin: 0; }
+    .edit-success { color: var(--success); margin: 0; }
 
     /* Tabla */
     .table-container { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
@@ -306,6 +373,17 @@ export class StudyPlanViewComponent implements OnChanges {
   totalHours = 0;
   uniqueCourses = 0;
 
+  /** Edición de sesión */
+  editingRow?: StudyTableRow;
+  editDate = '';
+  editTime = '';
+  editDuration = 1;
+  editError = '';
+  editSuccess = '';
+  isSaving = false;
+
+  constructor(private studyPlanService: StudyPlanService) {}
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['studyPlan'] || changes['difficultyMap']) {
       this.buildRows();
@@ -319,6 +397,7 @@ export class StudyPlanViewComponent implements OnChanges {
     for (const day of this.studyPlan) {
       for (const session of day.sessions) {
         this.allRows.push({
+          id: session.id,
           date: day.date,
           startTime: session.startTime,
           course: session.course,
@@ -400,6 +479,67 @@ export class StudyPlanViewComponent implements OnChanges {
   clearFilters(): void {
     this.filterCourse = '';
     this.filterDate = '';
+    this.applyFilters();
+  }
+
+  startEditing(row: StudyTableRow): void {
+    this.editingRow = { ...row };
+    this.editDate = row.date;
+    this.editTime = row.startTime;
+    this.editDuration = row.duration;
+    this.editError = '';
+    this.editSuccess = '';
+  }
+
+  cancelEditing(): void {
+    this.editingRow = undefined;
+    this.editError = '';
+    this.editSuccess = '';
+  }
+
+  saveEditing(): void {
+    if (!this.editingRow?.id) {
+      this.editError = 'No se puede editar esta sesión porque no tiene ID.';
+      return;
+    }
+
+    if (!this.editDate || !this.editTime || this.editDuration < 1) {
+      this.editError = 'Completa fecha, hora y duración válidas.';
+      return;
+    }
+
+    this.isSaving = true;
+    this.editError = '';
+    this.editSuccess = '';
+
+    const payload = {
+      date: this.editDate,
+      startTime: this.editTime,
+      duration: this.editDuration
+    };
+
+    this.studyPlanService.updateSession(this.editingRow.id, payload).subscribe({
+      next: () => {
+        this.editSuccess = 'Sesión actualizada correctamente.';
+        this.isSaving = false;
+        this.updateLocalSession();
+      },
+      error: (err: Error) => {
+        this.editError = err.message;
+        this.isSaving = false;
+      }
+    });
+  }
+
+  private updateLocalSession(): void {
+    if (!this.editingRow?.id) return;
+
+    const row = this.allRows.find(r => r.id === this.editingRow?.id);
+    if (!row) return;
+
+    row.date = this.editDate;
+    row.startTime = this.editTime;
+    row.duration = this.editDuration;
     this.applyFilters();
   }
 
